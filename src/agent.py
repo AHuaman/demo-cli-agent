@@ -41,9 +41,16 @@ appointment_agent = Agent(
     ),
 )
 
-# Register tools
-appointment_agent.tool_plain(list_appointments)
-appointment_agent.tool_plain(search_appointments)
-appointment_agent.tool_plain(get_appointment)
-appointment_agent.tool_plain(create_appointment)
-appointment_agent.tool_plain(delete_appointment)
+from datetime import datetime
+import mlflow.pydantic_ai
+from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.openai import OpenAIResponsesModel
+from pydantic_ai.providers.openai import OpenAIProvider
+# ... existing imports ...
+
+# ... after registering tools ...
+
+@appointment_agent.system_prompt
+def get_current_date() -> str:
+    return f"Today is {datetime.now().strftime('%A, %B %d, %Y')}."
+

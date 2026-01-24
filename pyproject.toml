@@ -1,7 +1,7 @@
 [project]
 name = "demo-cli-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI-powered Appointment Assistant CLI"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -14,7 +14,20 @@ dependencies = [
     "typer>=0.21.1",
 ]
 
+[project.scripts]
+appointment-agent = "src.main:app"
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
 ]
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
