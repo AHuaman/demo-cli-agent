@@ -13,7 +13,8 @@ import contextlib
 def setup_mlflow():
     # Create a temp directory for MLflow tracking
     temp_dir = tempfile.mkdtemp()
-    mlflow.set_tracking_uri(f"file://{temp_dir}")
+    db_path = f"{temp_dir}/mlflow.db"
+    mlflow.set_tracking_uri(f"sqlite:///{db_path}")
     yield
     # Cleanup
     shutil.rmtree(temp_dir)
