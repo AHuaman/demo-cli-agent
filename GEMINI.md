@@ -1,25 +1,34 @@
 # Project Context: demo-cli-agent
 
 ## Overview
-This project is a playground intended for teaching purposes. Currently, it serves as a skeleton or starting point for what is inferred to be a Python-based application, given the presence of a Python-specific `.gitignore`.
+This project is a high-quality demo of a CLI-based personal AI assistant specializing in appointment management. It showcases a modern Python stack with a focus on observability, safety, and idiomatic use of the PydanticAI framework.
 
 ## Architecture & Technology
-*   **Type:** Project Skeleton / Playground
-*   **Language:** Python (Inferred)
-*   **Current Status:** Initialization / Empty
+*   **Language:** Python 3.12+
+*   **Package Manager:** [uv](https://github.com/astral-sh/uv) (configured with `pyproject.toml` and Hatchling).
+*   **AI Agent:** [PydanticAI](https://pydantic.dev/pydantic-ai) with `OpenAIResponsesModel` (gpt-4.1-mini).
+*   **Database & ORM:** SQLite with [SQLModel](https://sqlmodel.tiangolo.com/) for unified Pydantic/SQLAlchemy schemas.
+*   **Observability:** [MLflow](https://mlflow.org/) with `mlflow.pydantic_ai.autolog()` for automatic agent tracing.
+*   **CLI Framework:** [Typer](https://typer.tiangolo.com/) and [Rich](https://github.com/Textualize/rich) for a polished terminal UI.
+*   **Configuration:** [PydanticSettings](https://docs.pydantic.dev/latest/usage/pydantic_settings/) for type-safe `.env` loading.
+
+## Key Design Patterns
+*   **Dependency Injection:** Agent tools utilize `RunContext[Deps]` to access the database session, enabling easy testing and clean resource management.
+*   **Human-in-the-Loop Safety:** Destructive actions (`CREATE`, `DELETE`) require explicit user confirmation via the agent's system prompt.
+*   **Unified Tracing:** Uses `mlflow.db` (SQLite) as the backend to capture detailed spans of agent reasoning and tool execution.
 
 ## Directory Structure
-*   `README.md`: Basic project description.
-*   `.gitignore`: Specifies intentionally untracked files to ignore (configured for Python).
-*   `GEMINI.md`: Context file for AI agents (this file).
+*   `src/main.py`: CLI entry point and interactive REPL.
+*   `src/agent.py`: Agent configuration, system prompts, and tool registration.
+*   `src/tools.py`: Business logic and database tools with dependency injection.
+*   `src/models.py`: SQLModel definitions for Appointments.
+*   `src/database.py`: Session management and table creation.
+*   `src/mlflow_server.py`: Utility to launch the MLflow tracking UI.
+*   `docs/`: Detailed `ARCHITECTURE.md` and `DEVELOPMENT.md`.
+*   `tests/`: Comprehensive test suite for all modules.
 
-## Development
-Since this is an empty project, there are no specific build or run commands yet.
-
-### Recommended Next Steps
-1.  Initialize a Python environment (e.g., `python -m venv venv`).
-2.  Create dependency management files (`requirements.txt` or `pyproject.toml`).
-3.  Begin adding source code (e.g., `src/` directory).
-
-### Conventions
-*   **Style:** Follow standard Python PEP 8 guidelines for future code additions.
+## Development Commands
+*   `uv run appointment-agent`: Start the assistant.
+*   `uv run ml-ui`: Start the MLflow UI.
+*   `uv run pytest`: Run all tests.
+*   `uv sync`: Synchronize dependencies.
