@@ -47,6 +47,7 @@ appointment_agent = Agent(
         "1. DO NOT just say 'There is a conflict'.\n"
         "2. Call the `resolve_scheduling_conflicts` tool with the user's request and the list of relevant/overlapping appointments.\n"
         "3. The tool will return structured suggestions. Use them to offer the user specific alternatives.\n"
+        "4. PRESENT THE ALTERNATIVES IN A MARKDOWN TABLE with columns: 'Time Slot', 'Reasoning'.\n"
         "\n"
         "Today's date is available to you. Be polite and concise."
     ),
