@@ -3,7 +3,8 @@ from typing import Optional
 
 class Settings(BaseSettings):
     OPENAI_API_KEY: str
-    MLFLOW_TRACKING_URI: str = "http://localhost:5050"
+    MODEL_NAME: str = "gpt-4.1-mini"
+    MLFLOW_TRACKING_URI: str = "sqlite:///mlflow.db"
     DATABASE_URL: str = "sqlite:///database.db"
     
     model_config = SettingsConfigDict(
