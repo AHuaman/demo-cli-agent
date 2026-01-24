@@ -2,6 +2,8 @@
 
 A high-quality demo of a personal AI assistant that operates in your terminal, helping you manage appointments with intelligent reasoning and built-in observability.
 
+> Warning: this project was generated with the purpose of showcasing agentic AI capabilities and patterns for learning/teaching purposes. This is not intended (yet) to be used as a curated reference for production use, although good design patterns are enforced and continuously revised/improved as this project moves forward. AI assistance is heavily used, also to develop better professional skills in working with AI coding agents.
+
 ## 🚀 Quickstart
 
 ### 1. Prerequisites

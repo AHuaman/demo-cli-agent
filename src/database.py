@@ -4,8 +4,10 @@ from src.settings import settings
 
 engine = create_engine(settings.DATABASE_URL)
 
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
+
 
 @contextmanager
 def get_session():

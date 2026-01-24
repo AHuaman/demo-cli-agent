@@ -10,7 +10,7 @@ from src.tools import (
     search_appointments,
     get_appointment,
     create_appointment,
-    delete_appointment
+    delete_appointment,
 )
 from src.settings import settings
 
@@ -26,7 +26,7 @@ model = OpenAIResponsesModel(settings.MODEL_NAME, provider=openai_provider)
 appointment_agent = Agent(
     model,
     deps_type=Deps,
-    output_type=str, # Explicitly stating we want string output
+    output_type=str,  # Explicitly stating we want string output
     system_prompt=(
         "You are a helpful personal assistant managing appointments.\n"
         "You can list, search, view, create, and delete appointments.\n"
@@ -51,6 +51,7 @@ appointment_agent.tool(search_appointments)
 appointment_agent.tool(get_appointment)
 appointment_agent.tool(create_appointment)
 appointment_agent.tool(delete_appointment)
+
 
 @appointment_agent.system_prompt
 def get_current_date() -> str:

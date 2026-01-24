@@ -9,9 +9,11 @@ from src import tools
 from dataclasses import dataclass
 from typing import Any
 
+
 @dataclass
 class MockContext:
     deps: Any
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_mlflow():
@@ -21,6 +23,7 @@ def setup_mlflow():
     yield
     shutil.rmtree(temp_dir)
 
+
 @pytest.fixture(name="session")
 def session_fixture():
     engine = create_engine("sqlite://")
@@ -28,9 +31,11 @@ def session_fixture():
     with Session(engine) as session:
         yield session
 
+
 @pytest.fixture
 def mock_ctx(session):
     return MockContext(deps=tools.Deps(session=session))
+
 
 @pytest.fixture
 def sample_appointments(session):
@@ -39,21 +44,21 @@ def sample_appointments(session):
         start_time=datetime.now(),
         end_time=datetime.now() + timedelta(hours=1),
         location="Room A",
-        description="Weekly sync"
+        description="Weekly sync",
     )
     app2 = Appointment(
         title="Doctor Appointment",
         start_time=datetime.now() + timedelta(days=1),
         end_time=datetime.now() + timedelta(days=1, hours=1),
         location="Clinic",
-        description="Checkup"
+        description="Checkup",
     )
     app3 = Appointment(
         title="Lunch with Client",
         start_time=datetime.now() + timedelta(days=2),
         end_time=datetime.now() + timedelta(days=2, hours=2),
         location="Restaurant",
-        description="Project discussion"
+        description="Project discussion",
     )
     session.add(app1)
     session.add(app2)
@@ -61,18 +66,21 @@ def sample_appointments(session):
     session.commit()
     return [app1, app2, app3]
 
+
 def test_list_appointments(mock_ctx, sample_appointments):
     results = tools.list_appointments(mock_ctx)
     assert len(results) == 3
-    
+
     results = tools.list_appointments(mock_ctx, limit=1, offset=0)
     assert len(results) == 1
     assert results[0].title == "Team Meeting"
+
 
 def test_search_appointments(mock_ctx, sample_appointments):
     results = tools.search_appointments(mock_ctx, "Doctor")
     assert len(results) == 1
     assert results[0].title == "Doctor Appointment"
+
 
 def test_get_appointment(mock_ctx, sample_appointments):
     app = tools.get_appointment(mock_ctx, 1)
