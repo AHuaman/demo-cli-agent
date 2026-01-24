@@ -1,8 +1,7 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 from src.negotiator import negotiator_agent
 from src.schemas import ConflictResolution
-from pydantic_ai.messages import ModelMessage
 
 @pytest.mark.asyncio
 async def test_negotiator_returns_structured_output():

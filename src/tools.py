@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Protocol, Any
+from typing import List, Optional, Any
 from sqlmodel import select, col, Session
 from pydantic_ai import RunContext
 from src.models import Appointment
