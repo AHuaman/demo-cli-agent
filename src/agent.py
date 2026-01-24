@@ -2,7 +2,10 @@ import mlflow.pydantic_ai
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIResponsesModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from datetime import datetime
+
 from src.tools import (
+    Deps,
     list_appointments,
     search_appointments,
     get_appointment,
@@ -16,13 +19,14 @@ mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
 mlflow.pydantic_ai.autolog()
 
 # Initialize the provider and model using settings
-# This follows PydanticAI best practices for explicit API key usage with OpenAIResponsesModel
 openai_provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
 model = OpenAIResponsesModel(settings.MODEL_NAME, provider=openai_provider)
 
-# Initialize the agent
+# Initialize the agent with Deps
 appointment_agent = Agent(
     model,
+    deps_type=Deps,
+    result_type=str, # Explicitly stating we want string output
     system_prompt=(
         "You are a helpful personal assistant managing appointments.\n"
         "You can list, search, view, create, and delete appointments.\n"
@@ -41,16 +45,13 @@ appointment_agent = Agent(
     ),
 )
 
-from datetime import datetime
-import mlflow.pydantic_ai
-from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openai import OpenAIResponsesModel
-from pydantic_ai.providers.openai import OpenAIProvider
-# ... existing imports ...
-
-# ... after registering tools ...
+# Register tools using @agent.tool decorator style is often preferred for deps
+appointment_agent.tool(list_appointments)
+appointment_agent.tool(search_appointments)
+appointment_agent.tool(get_appointment)
+appointment_agent.tool(create_appointment)
+appointment_agent.tool(delete_appointment)
 
 @appointment_agent.system_prompt
 def get_current_date() -> str:
     return f"Today is {datetime.now().strftime('%A, %B %d, %Y')}."
-
