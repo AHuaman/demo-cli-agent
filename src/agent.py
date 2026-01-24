@@ -26,7 +26,7 @@ model = OpenAIResponsesModel(settings.MODEL_NAME, provider=openai_provider)
 appointment_agent = Agent(
     model,
     deps_type=Deps,
-    result_type=str, # Explicitly stating we want string output
+    output_type=str, # Explicitly stating we want string output
     system_prompt=(
         "You are a helpful personal assistant managing appointments.\n"
         "You can list, search, view, create, and delete appointments.\n"

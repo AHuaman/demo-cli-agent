@@ -60,7 +60,7 @@ async def chat_loop():
                     
                     # Render the response
                     console.print("\n[bold blue]Assistant >[/bold blue]")
-                    console.print(Markdown(result.data))
+                    console.print(Markdown(result.output))
                     
             except KeyboardInterrupt:
                 console.print("\n[yellow]Session interrupted. Goodbye![/yellow]")
