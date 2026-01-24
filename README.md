@@ -2,8 +2,6 @@
 
 A high-quality demo of a personal AI assistant that operates in your terminal, helping you manage appointments with intelligent reasoning and built-in observability.
 
-> Warning: this project was generated with the purpose of showcasing agentic AI capabilities and patterns for learning/teaching purposes. This is not intended (yet) to be used as a curated reference for production use, although good design patterns are enforced and continuously revised/improved as this project moves forward. AI assistance is heavily used, also to develop better professional skills in working with AI coding agents.
-
 ## 🚀 Quickstart
 
 ### 1. Prerequisites
@@ -40,12 +38,14 @@ Visit `http://localhost:5050` in your browser.
 
 - **Intelligent Intent Recognition**: Register, search, or delete appointments using natural language.
 - **Safety Confirmation**: The agent always asks for your permission before creating or deleting data.
+- **Smart Conflict Resolution**: If you try to double-book, a specialized subagent analyzes your schedule and suggests optimal alternative slots.
 - **Observability**: Every interaction is traced automatically via MLflow.
 - **Modern Stack**: Built with PydanticAI, SQLModel, Typer, and Rich.
 
 ## 🏗️ Architecture & Patterns
 
 This project follows several modern Python best practices:
+- **Multi-Agent Delegation**: A Supervisor agent delegates complex reasoning (like conflict resolution) to specialized subagents.
 - **Dependency Injection**: Tools use `RunContext` to access resources like database sessions.
 - **Type Safety**: Pydantic models validate all data flowing between the LLM and the database.
 - **Autologging**: Seamless integration with MLflow for debugging and evaluation.
