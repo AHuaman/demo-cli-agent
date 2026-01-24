@@ -19,7 +19,7 @@ This project uses `uv`. To set up your local development environment:
 We use `pytest` for testing. To run all tests:
 
 ```bash
-PYTHONPATH=. uv run pytest
+uv run pytest
 ```
 
 ### Test Structure
