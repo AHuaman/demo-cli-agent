@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 appointment-agent = "src.main:app"
+ml-ui = "src.mlflow_server:serve"
 
 [dependency-groups]
 dev = [
