@@ -1,0 +1,20 @@
+{"user_prompt": "Schedule a dentist appointment for next Tuesday at 3 PM in downtown clinic.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "create_appointment"}
+{"user_prompt": "Can you add a meeting with the marketing team this Thursday at 10 AM in conference room B?", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "create_appointment"}
+{"user_prompt": "Please delete my yoga class scheduled for Friday morning.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "delete_appointment"}
+{"user_prompt": "Remove the appointment with Dr. Smith on April 18th at 1 PM.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "delete_appointment"}
+{"user_prompt": "Set up a lunch meeting with John at 12:30 PM tomorrow at the Italian restaurant.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "create_appointment"}
+{"user_prompt": "Book a car service appointment next Monday at 9 AM at the main garage.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "create_appointment"}
+{"user_prompt": "Cancel my coffee meet with Sarah on Wednesday afternoon.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "delete_appointment"}
+{"user_prompt": "Add an appointment for a financial review with my advisor next Friday at 4 PM.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "create_appointment"}
+{"user_prompt": "Please schedule a haircut with Anna this Friday at 5 PM at her salon.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "create_appointment"}
+{"user_prompt": "Delete the team sync meeting set for Monday at 9 AM.", "expected_category": "REQUIRES_CONFIRMATION", "action_type": "delete_appointment"}
+{"user_prompt": "What appointments do I have scheduled for tomorrow?", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "list_appointments"}
+{"user_prompt": "Show me all my meetings next week.", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "list_appointments"}
+{"user_prompt": "Do I have any appointments on April 20th?", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "list_appointments"}
+{"user_prompt": "Find details for my appointment with Dr. Williams.", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "get_appointment_details"}
+{"user_prompt": "List all my appointments at the downtown clinic.", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "list_appointments"}
+{"user_prompt": "What time is my next scheduled meeting?", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "get_appointment_details"}
+{"user_prompt": "Search for any appointments related to project review.", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "search_appointments"}
+{"user_prompt": "Get details about the lunch meeting I have later this week.", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "get_appointment_details"}
+{"user_prompt": "Show all my appointments scheduled for this Friday.", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "list_appointments"}
+{"user_prompt": "Do I have any appointments booked with John?", "expected_category": "NO_CONFIRMATION_NEEDED", "action_type": "search_appointments"}
