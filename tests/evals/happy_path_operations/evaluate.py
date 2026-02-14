@@ -2,6 +2,8 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
+import mlflow
+from mlflow.genai.judges import make_judge
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -9,7 +11,63 @@ import src.database
 from src.agent import appointment_agent
 from src.models import Appointment
 from src.negotiator import negotiator_agent
+from src.settings import settings
 from src.tools import Deps
+
+_MLFLOW_EXPERIMENT_NAME: str = "Happy Path Operations Eval"
+
+_GROUNDEDNESS_JUDGE_INSTRUCTIONS: str = """You are evaluating whether an agent's response is grounded in the expected appointments.
+
+Expected appointments that should be referenced:
+{{expectations}}
+
+Agent's response:
+{{outputs}}
+
+Score 1 if the response ONLY mentions appointments that appear in the expected list (or correctly indicates none exist).
+Score 0 if the response mentions ANY appointment NOT in the expected list (hallucination).
+
+Special cases:
+- If expected_appointments is empty and the agent asks for confirmation, score 1.
+- If expected_appointments is empty and the agent says "no appointments found", score 1.
+- Be strict: inventing appointment titles not in expected_appointments = score 0.
+"""
+
+_CORRECTNESS_JUDGE_INSTRUCTIONS: str = """You are evaluating if an agent's response correctly addresses the user's request.
+
+User request: {{inputs}}
+Expected behavior (from expectations.expected_answer_contains): {{expectations}}
+Agent's response: {{outputs}}
+
+Score 1 if:
+- The response addresses the user's request appropriately
+- The response contains all expected key elements (or reasonable semantic equivalents)
+- For CREATE/DELETE/UPDATE requests: asking for confirmation counts as correct behavior
+
+Score 0 if:
+- The response is missing expected information
+- The response contains factually incorrect information
+- The response doesn't address the user's request
+"""
+
+# Set MLflow experiment
+mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
+mlflow.set_experiment(_MLFLOW_EXPERIMENT_NAME)
+
+# Define LLM Judges
+groundedness_judge = make_judge(
+    name="answer_groundedness",
+    instructions=_GROUNDEDNESS_JUDGE_INSTRUCTIONS,
+    model=f"openai:/{settings.MODEL_NAME}",
+    feedback_value_type=bool,
+)
+
+correctness_judge = make_judge(
+    name="answer_correctness",
+    instructions=_CORRECTNESS_JUDGE_INSTRUCTIONS,
+    model=f"openai:/{settings.MODEL_NAME}",
+    feedback_value_type=bool,
+)
 
 
 @contextmanager
