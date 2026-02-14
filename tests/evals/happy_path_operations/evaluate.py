@@ -41,6 +41,23 @@ Special cases:
 - Be strict: inventing appointment titles not in expected_appointments = score 0.
 """
 
+_RETRIEVAL_RECALL_JUDGE_INSTRUCTIONS: str = """You are evaluating whether the agent retrieved the expected appointments from the database.
+
+Expected appointments to retrieve (from expectations.expected_appointments): {{expectations}}
+Execution trace showing tool calls and their outputs: {{trace}}
+
+Examine the trace for tool calls (search_appointments, list_appointments, get_appointment).
+Look at the outputs of these tool calls to see which appointments were actually retrieved.
+
+Score 1 if:
+- All appointments listed in expected_appointments were retrieved by tool calls in the trace
+- OR expected_appointments is empty (CREATE/UPDATE/DELETE operation - no retrieval needed)
+
+Score 0 if:
+- Any expected appointment is missing from the tool call outputs in the trace
+- The agent failed to call the appropriate tool to retrieve expected appointments
+"""
+
 _CORRECTNESS_JUDGE_INSTRUCTIONS: str = """You are evaluating if an agent's response correctly addresses the user's request.
 
 User request: {{inputs}}
@@ -77,11 +94,17 @@ correctness_judge = make_judge(
     feedback_value_type=bool,
 )
 
+retrieval_recall_judge = make_judge(
+    name="retrieval_recall",
+    instructions=_RETRIEVAL_RECALL_JUDGE_INSTRUCTIONS,
+    model=f"openai:/{settings.MODEL_NAME}",
+    feedback_value_type=bool,
+)
 
+
+# Legacy code-based scorer (kept for reference, not used)
 @scorer
-def retrieval_recall(
-    trace: Trace, expectations: dict
-) -> Feedback:
+def retrieval_recall(trace: Trace, expectations: dict):
     """
     Code-based scorer that measures retrieval recall.
     Checks if expected appointments were retrieved by tool calls.
@@ -93,7 +116,6 @@ def retrieval_recall(
         return Feedback(
             value=1.0,
             rationale="No appointments expected to be retrieved (CREATE operation)",
-            metadata={"expected": [], "retrieved": []}
         )
 
     # Extract retrieved appointment titles from TOOL spans
@@ -120,11 +142,6 @@ def retrieval_recall(
     return Feedback(
         value=recall,
         rationale=f"Retrieved {len(matched)}/{len(expected_appointments)} expected appointments",
-        metadata={
-            "expected": list(expected_appointments),
-            "retrieved": list(retrieved_titles),
-            "matched": list(matched)
-        }
     )
 
 
@@ -224,7 +241,7 @@ def run_evaluation(data_path: str = _SYNTHETIC_DATASET_PATH) -> None:
         print("Starting evaluation in isolated environment...")
         results = evaluate(
             data=data,
-            scorers=[retrieval_recall, groundedness_judge, correctness_judge],
+            scorers=[retrieval_recall_judge, groundedness_judge, correctness_judge],
             predict_fn=predict_fn,
         )
 
