@@ -6,7 +6,10 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 import src.database
+from src.agent import appointment_agent
 from src.models import Appointment
+from src.negotiator import negotiator_agent
+from src.tools import Deps
 
 
 @contextmanager
@@ -83,3 +86,11 @@ def evaluation_context():
         patch("src.negotiator.datetime", MockDatetime),
     ):
         yield
+
+
+async def predict_fn(user_prompt: str) -> str:
+    """Run the appointment agent and return its response."""
+    with src.database.get_session() as session:
+        deps = Deps(session=session, negotiator_agent=negotiator_agent)
+        result = await appointment_agent.run(user_prompt, deps=deps)
+        return result.output

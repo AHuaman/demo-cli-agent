@@ -30,3 +30,15 @@ async def test_evaluation_context_isolation():
             assert "Lunch with Sarah" in titles
             assert "Marketing Team Meeting" in titles
             assert "Dentist Appointment" in titles
+
+
+@pytest.mark.asyncio
+async def test_predict_fn_returns_response():
+    """Verify predict_fn returns a string response."""
+    with evaluate.evaluation_context():
+        response = await evaluate.predict_fn("What appointments do I have tomorrow?")
+        assert isinstance(response, str)
+        assert len(response) > 0
+        # Should mention tomorrow's appointments
+        lowered = response.lower()
+        assert "doctor" in lowered or "team sync" in lowered
