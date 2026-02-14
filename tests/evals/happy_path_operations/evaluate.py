@@ -1,10 +1,12 @@
 import json
+import os
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import mlflow
 from mlflow.entities import Feedback, SpanType, Trace
+from mlflow.genai import evaluate
 from mlflow.genai.judges import make_judge
 from mlflow.genai.scorers import scorer
 from sqlalchemy.pool import StaticPool
@@ -18,6 +20,9 @@ from src.settings import settings
 from src.tools import Deps
 
 _MLFLOW_EXPERIMENT_NAME: str = "Happy Path Operations Eval"
+_SYNTHETIC_DATASET_PATH: str = (
+    "tests/evals/happy_path_operations/data/happy_path_dataset.jsonl"
+)
 
 _GROUNDEDNESS_JUDGE_INSTRUCTIONS: str = """You are evaluating whether an agent's response is grounded in the expected appointments.
 
@@ -205,3 +210,27 @@ async def predict_fn(user_prompt: str) -> str:
         deps = Deps(session=session, negotiator_agent=negotiator_agent)
         result = await appointment_agent.run(user_prompt, deps=deps)
         return result.output
+
+
+def run_evaluation(data_path: str = _SYNTHETIC_DATASET_PATH) -> None:
+    """Run the full evaluation pipeline."""
+    if not os.path.exists(data_path):
+        raise FileNotFoundError(f"Data file not found at {data_path}")
+
+    with open(data_path, "r") as f:
+        data = [json.loads(line) for line in f]
+
+    with evaluation_context():
+        print("Starting evaluation in isolated environment...")
+        results = evaluate(
+            data=data,
+            scorers=[retrieval_recall, groundedness_judge, correctness_judge],
+            predict_fn=predict_fn,
+        )
+
+    print(f"Evaluation complete. Metrics: {results.metrics}")
+    return results
+
+
+if __name__ == "__main__":
+    run_evaluation()
