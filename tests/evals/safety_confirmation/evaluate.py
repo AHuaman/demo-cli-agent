@@ -1,12 +1,18 @@
 import json
 import os
+from contextlib import contextmanager
+from datetime import datetime, timedelta
+from unittest.mock import patch
 
 import mlflow
 from mlflow.genai import evaluate
 from mlflow.genai.judges import make_judge
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
 
+import src.database
 from src.agent import appointment_agent
-from src.database import get_session
+from src.models import Appointment
 from src.negotiator import negotiator_agent
 from src.settings import settings
 from src.tools import Deps
@@ -44,11 +50,93 @@ safety_judge = make_judge(
 )
 
 
+@contextmanager
+def evaluation_context():
+    """
+    Sets up a safe, isolated environment for evaluation.
+    - Mocks the database to use an in-memory SQLite instance.
+    - Seeds the database with test data.
+    - Mocks datetime to a fixed point in time.
+    """
+    # 1. Setup In-Memory DB
+    test_engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(test_engine)
+
+    # 2. Seed Data
+    with Session(test_engine) as session:
+        appts = [
+            Appointment(
+                title="Marketing Team Meeting",
+                start_time=datetime.fromisoformat(
+                    "2026-02-17T15:00:00"
+                ),  # Next Tuesday
+                end_time=datetime.fromisoformat("2026-02-17T15:00:00")
+                + timedelta(minutes=60),
+                location="Conference Room B",
+            ),
+            Appointment(
+                title="Doctor's Appointment",
+                start_time=datetime.fromisoformat(
+                    "2026-02-12T14:00:00"
+                ),  # Thursday (Tomorrow)
+                end_time=datetime.fromisoformat("2026-02-12T14:00:00")
+                + timedelta(minutes=60),
+            ),
+            Appointment(
+                title="Lunch with Sarah",
+                start_time=datetime.fromisoformat("2026-02-13T12:00:00"),  # Friday
+                end_time=datetime.fromisoformat("2026-02-13T12:00:00")
+                + timedelta(minutes=60),
+            ),
+            Appointment(
+                title="Dentist Appointment",
+                start_time=datetime.fromisoformat("2026-05-05T10:00:00"),
+                end_time=datetime.fromisoformat("2026-05-05T10:00:00")
+                + timedelta(minutes=60),
+                location="Downtown Clinic",
+            ),
+            Appointment(
+                title="Team Sync",
+                start_time=datetime.fromisoformat(
+                    "2026-02-12T09:00:00"
+                ),  # Tomorrow Morning
+                end_time=datetime.fromisoformat("2026-02-12T09:00:00")
+                + timedelta(minutes=30),
+            ),
+        ]
+        session.add_all(appts)
+        session.commit()
+
+    # 3. Define the mocked get_session
+    @contextmanager
+    def mock_get_session():
+        with Session(test_engine) as session:
+            yield session
+
+    # 4. Mock Datetime (Fixed to Wed, Feb 11, 2026)
+    class MockDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 2, 11, 10, 0, 0)
+
+    # Apply patches
+    with (
+        patch("src.database.get_session", side_effect=mock_get_session),
+        patch("src.agent.datetime", MockDatetime),
+        patch("src.negotiator.datetime", MockDatetime),
+    ):
+        yield
+
+
 # Define the Prediction Function
 async def predict_fn(user_prompt: str) -> str:
     # user_prompt is passed as a keyword argument from the 'inputs' column
-    # Create a new session for each prediction
-    with get_session() as session:
+    # The session is now provided by the patched get_session
+    with src.database.get_session() as session:
         deps = Deps(session=session, negotiator_agent=negotiator_agent)
         result = await appointment_agent.run(user_prompt, deps=deps)
         return result.output
@@ -57,16 +145,19 @@ async def predict_fn(user_prompt: str) -> str:
 def run_evaluation(data_path: str) -> None:
     # Load data
     if not os.path.exists(data_path):
-        raise FileExistsError(f"Data file not found at {data_path}")
+        raise FileNotFoundError(f"Data file not found at {data_path}")
 
     with open(data_path, "r") as f:
         data = [json.loads(line) for line in f]
 
-    results = evaluate(
-        data=data,
-        scorers=[safety_judge],
-        predict_fn=predict_fn,
-    )
+    # Run evaluation inside the safe context
+    with evaluation_context():
+        print("Starting evaluation in isolated environment...")
+        results = evaluate(
+            data=data,
+            scorers=[safety_judge],
+            predict_fn=predict_fn,
+        )
 
     print(f"Evaluation complete. Metrics: {results.metrics}")
     return None
