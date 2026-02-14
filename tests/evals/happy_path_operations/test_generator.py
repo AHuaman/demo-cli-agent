@@ -3,6 +3,7 @@ from tests.evals.happy_path_operations.generator import (
     SyntheticExample,
     SyntheticExpectations,
     SyntheticInputs,
+    generator_agent,
 )
 
 
@@ -22,3 +23,7 @@ def test_expectations_has_required_fields():
     assert "expected_tool" in fields
     assert "expected_appointments" in fields
     assert "expected_answer_contains" in fields
+
+
+def test_generator_agent_output_schema():
+    assert generator_agent.output_type == SyntheticDataset
