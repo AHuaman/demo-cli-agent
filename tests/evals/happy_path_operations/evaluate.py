@@ -1,9 +1,12 @@
+import json
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import mlflow
+from mlflow.entities import Feedback, SpanType, Trace
 from mlflow.genai.judges import make_judge
+from mlflow.genai.scorers import scorer
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -68,6 +71,56 @@ correctness_judge = make_judge(
     model=f"openai:/{settings.MODEL_NAME}",
     feedback_value_type=bool,
 )
+
+
+@scorer
+def retrieval_recall(
+    trace: Trace, expectations: dict
+) -> Feedback:
+    """
+    Code-based scorer that measures retrieval recall.
+    Checks if expected appointments were retrieved by tool calls.
+    """
+    expected_appointments = set(expectations.get("expected_appointments", []))
+
+    # If no appointments expected (e.g., CREATE operation), recall is 1.0
+    if not expected_appointments:
+        return Feedback(
+            value=1.0,
+            rationale="No appointments expected to be retrieved (CREATE operation)",
+            metadata={"expected": [], "retrieved": []}
+        )
+
+    # Extract retrieved appointment titles from TOOL spans
+    retrieved_titles = set()
+
+    if trace and trace.data and trace.data.spans:
+        for span in trace.data.spans:
+            # Look for tool spans that return appointment data
+            if span.span_type == SpanType.TOOL and span.outputs:
+                outputs = span.outputs
+                # Handle list of appointments
+                if isinstance(outputs, list):
+                    for item in outputs:
+                        if isinstance(item, dict) and "title" in item:
+                            retrieved_titles.add(item["title"])
+                # Handle single appointment
+                elif isinstance(outputs, dict) and "title" in outputs:
+                    retrieved_titles.add(outputs["title"])
+
+    # Calculate recall
+    matched = expected_appointments & retrieved_titles
+    recall = len(matched) / len(expected_appointments)
+
+    return Feedback(
+        value=recall,
+        rationale=f"Retrieved {len(matched)}/{len(expected_appointments)} expected appointments",
+        metadata={
+            "expected": list(expected_appointments),
+            "retrieved": list(retrieved_titles),
+            "matched": list(matched)
+        }
+    )
 
 
 @contextmanager
