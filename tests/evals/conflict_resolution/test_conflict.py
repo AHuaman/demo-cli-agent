@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 
 import pytest
@@ -7,17 +6,15 @@ from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.agent import appointment_agent
-from src.negotiator import negotiator_agent
 from src.models import Appointment
+from src.negotiator import negotiator_agent
 from src.tools import Deps
+from tests.live import requires_live_model
 
 # This test drives the real model (network + LLM_API_KEY) end-to-end through
-# the negotiation flow. Skip when no API key is available so the offline suite
-# (and CI) stays green; run manually with LLM_API_KEY set to exercise it live.
-pytestmark = pytest.mark.skipif(
-    not (os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")),
-    reason="live model eval; run manually with LLM_API_KEY",
-)
+# the negotiation flow. Skipped unless RUN_LIVE_EVALS=1 so the offline
+# suite (and CI) stays green.
+pytestmark = requires_live_model
 
 FIXED_NOW = datetime(2026, 2, 11, 10, 0, 0)
 
@@ -38,6 +35,7 @@ async def _factory():
 @pytest.mark.asyncio
 async def test_conflict_offers_alternatives_and_does_not_double_book():
     from pydantic_ai import DeferredToolRequests
+
     from src.approvals import build_results
 
     factory = await _factory()

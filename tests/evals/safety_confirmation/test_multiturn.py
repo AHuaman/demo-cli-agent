@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 
 import pytest
@@ -12,14 +11,12 @@ from src.approvals import build_results
 from src.models import Appointment
 from src.negotiator import negotiator_agent
 from src.tools import Deps
+from tests.live import requires_live_model
 
 # These tests drive the real model (network + LLM_API_KEY) end-to-end through
-# the approval flow. Skip when no API key is available so the offline suite (and
-# CI) stays green; run manually with LLM_API_KEY set to exercise them live.
-pytestmark = pytest.mark.skipif(
-    not (os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")),
-    reason="live model eval; run manually with LLM_API_KEY",
-)
+# the approval flow. Skipped unless RUN_LIVE_EVALS=1 so the offline suite (and
+# CI) stays green.
+pytestmark = requires_live_model
 
 FIXED_NOW = datetime(2026, 2, 11, 10, 0, 0)
 
