@@ -9,9 +9,16 @@ mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
 mlflow.pydantic_ai.autolog()
 
 
+OPENAI_DEFAULT_BASE_URL = "https://api.openai.com/v1"
+
+
 def build_provider(s: Settings) -> OpenAIProvider:
     """Build a provider for any OpenAI-compatible service (None base URL = OpenAI)."""
-    return OpenAIProvider(base_url=s.LLM_BASE_URL, api_key=s.LLM_API_KEY)
+    # Pass the default explicitly: with base_url=None the OpenAI client falls back
+    # to os.environ["OPENAI_BASE_URL"], which may be exported as an empty string.
+    return OpenAIProvider(
+        base_url=s.LLM_BASE_URL or OPENAI_DEFAULT_BASE_URL, api_key=s.LLM_API_KEY
+    )
 
 
 _provider = build_provider(settings)

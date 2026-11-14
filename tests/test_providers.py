@@ -48,3 +48,12 @@ def test_judge_params_omit_base_url_when_unset(monkeypatch):
 
 def test_judge_model_uri_uses_judge_model_name():
     assert providers.judge_model_uri == f"openai:/{settings.JUDGE_MODEL_NAME}"
+
+
+def test_blank_exported_base_url_still_defaults_to_openai(monkeypatch):
+    # `uv run --env-file .env` exports `OPENAI_BASE_URL=` as an empty string; the
+    # OpenAI client would use it verbatim and fail with "missing protocol".
+    monkeypatch.setenv("OPENAI_BASE_URL", "")
+    monkeypatch.delenv("LLM_BASE_URL", raising=False)
+    s = Settings(LLM_API_KEY="k", _env_file=None)
+    assert providers.build_provider(s).base_url == "https://api.openai.com/v1/"
