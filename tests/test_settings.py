@@ -21,6 +21,7 @@ def test_settings_default_values(monkeypatch):
     monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
 
     settings = Settings(_env_file=None)
     # Just verify they are populated (not empty)
@@ -69,3 +70,19 @@ def test_missing_key_fails(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with pytest.raises(ValidationError):
         Settings(_env_file=None)
+
+
+def test_legacy_openai_base_url_still_accepted(monkeypatch):
+    monkeypatch.setenv("LLM_API_KEY", "k")
+    monkeypatch.delenv("LLM_BASE_URL", raising=False)
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://integrate.api.nvidia.com/v1")
+    assert (
+        Settings(_env_file=None).LLM_BASE_URL == "https://integrate.api.nvidia.com/v1"
+    )
+
+
+def test_llm_base_url_wins_over_legacy(monkeypatch):
+    monkeypatch.setenv("LLM_API_KEY", "k")
+    monkeypatch.setenv("LLM_BASE_URL", "https://new.example/v1")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://legacy.example/v1")
+    assert Settings(_env_file=None).LLM_BASE_URL == "https://new.example/v1"

@@ -41,6 +41,7 @@ def test_judge_params_include_base_url_when_set():
 
 def test_judge_params_omit_base_url_when_unset(monkeypatch):
     monkeypatch.delenv("LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
     s = Settings(LLM_API_KEY="k", _env_file=None)
     assert providers.build_judge_inference_params(s) == {"api_key": "k"}
 

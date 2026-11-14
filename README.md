@@ -21,7 +21,7 @@ cp .env.example .env
 
 Edit `.env` and set `LLM_API_KEY`. To use a non-OpenAI service, also set `LLM_BASE_URL`
 and the model IDs; `.env.example` has a ready-to-uncomment NVIDIA NIM block. An existing
-`OPENAI_API_KEY` still works.
+`OPENAI_API_KEY` / `OPENAI_BASE_URL` still work.
 
 ### 3. Install Dependencies
 

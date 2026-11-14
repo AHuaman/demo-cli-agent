@@ -8,8 +8,10 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = Field(
         validation_alias=AliasChoices("LLM_API_KEY", "OPENAI_API_KEY")
     )
-    # None means OpenAI's default endpoint.
-    LLM_BASE_URL: str | None = None
+    # None means OpenAI's default endpoint. OPENAI_BASE_URL is the legacy name.
+    LLM_BASE_URL: str | None = Field(
+        default=None, validation_alias=AliasChoices("LLM_BASE_URL", "OPENAI_BASE_URL")
+    )
     MODEL_NAME: str = "gpt-4.1-mini"
     JUDGE_MODEL_NAME: str = "gpt-5.2"
     MODEL_TEMPERATURE: float = 0.0
