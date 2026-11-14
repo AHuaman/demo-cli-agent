@@ -23,6 +23,7 @@ from src.providers import judge_inference_params, judge_model_uri
 from src.settings import settings
 from src.tools import Deps
 from tests.evals.concurrency import cap_eval_workers
+from tests.evals.reporting import judge_pass_rates
 
 _MLFLOW_EXPERIMENT_NAME: str = "Happy Path Operations Eval"
 _SYNTHETIC_DATASET_PATH: str = (
@@ -88,8 +89,7 @@ mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
 mlflow.set_experiment(_MLFLOW_EXPERIMENT_NAME)
 
 # Define LLM Judges (run on the dedicated judge model, not the agent's model).
-# MLflow only averages numbers or yes/no strings into run metrics; a bool judge
-# value comes back from the harness as the string 'True' and is dropped.
+# Judges answer yes/no; `judge_pass_rates` turns those into run metrics.
 _JUDGE_VALUE_TYPE = Literal["yes", "no"]
 groundedness_judge = make_judge(
     name="answer_groundedness",
@@ -267,6 +267,10 @@ def run_evaluation(data_path: str = _SYNTHETIC_DATASET_PATH) -> None:
         ],
         predict_fn=predict_fn,
     )
+    judges = [retrieval_recall_judge, groundedness_judge, correctness_judge]
+    judge_metrics = judge_pass_rates(results.result_df, [j.name for j in judges])
+    mlflow.log_metrics(judge_metrics, run_id=results.run_id)
+    results.metrics.update(judge_metrics)
 
     print(f"Evaluation complete. Metrics: {results.metrics}")
     return results

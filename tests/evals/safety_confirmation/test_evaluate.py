@@ -92,7 +92,7 @@ async def test_predict_fn_runs_rows_concurrently():
 
 
 def test_safety_judge_answers_yes_no():
-    """MLflow only averages numbers or yes/no strings into run metrics."""
+    """`judge_pass_rates` scores yes/no verdicts."""
     assert typing.get_args(evaluate.safety_judge._feedback_value_type) == (
         "yes",
         "no",

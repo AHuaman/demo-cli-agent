@@ -66,7 +66,7 @@ async def test_predict_fn_without_outer_context():
 
 
 def test_happy_path_judges_answer_yes_no():
-    """MLflow only averages numbers or yes/no strings into run metrics."""
+    """`judge_pass_rates` scores yes/no verdicts."""
     for judge in (
         evaluate.groundedness_judge,
         evaluate.correctness_judge,
