@@ -86,3 +86,47 @@ def test_llm_base_url_wins_over_legacy(monkeypatch):
     monkeypatch.setenv("LLM_BASE_URL", "https://new.example/v1")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://legacy.example/v1")
     assert Settings(_env_file=None).LLM_BASE_URL == "https://new.example/v1"
+
+
+def _dotenv(tmp_path, body: str):
+    path = tmp_path / ".env"
+    path.write_text(body)
+    return path
+
+
+@pytest.fixture
+def clean_llm_env(monkeypatch):
+    for name in ("LLM_API_KEY", "OPENAI_API_KEY", "LLM_BASE_URL", "OPENAI_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
+    return monkeypatch
+
+
+def test_dotenv_llm_key_beats_shell_legacy_key(tmp_path, clean_llm_env):
+    clean_llm_env.setenv("OPENAI_API_KEY", "sk-shell")
+    s = Settings(_env_file=_dotenv(tmp_path, "LLM_API_KEY=nvapi-dotenv\n"))
+    assert s.LLM_API_KEY == "nvapi-dotenv"
+
+
+def test_dotenv_llm_base_url_beats_shell_legacy_url(tmp_path, clean_llm_env):
+    clean_llm_env.setenv("OPENAI_BASE_URL", "https://shell.example/v1")
+    s = Settings(
+        _env_file=_dotenv(tmp_path, "LLM_API_KEY=k\nLLM_BASE_URL=https://nim.example/v1\n")
+    )
+    assert s.LLM_BASE_URL == "https://nim.example/v1"
+
+
+def test_blank_llm_base_url_does_not_hide_legacy_url(tmp_path, clean_llm_env):
+    body = "LLM_API_KEY=k\nLLM_BASE_URL=\nOPENAI_BASE_URL=https://nim.example/v1\n"
+    assert Settings(_env_file=_dotenv(tmp_path, body)).LLM_BASE_URL == (
+        "https://nim.example/v1"
+    )
+
+
+def test_blank_llm_key_falls_back_to_legacy_key(tmp_path, clean_llm_env):
+    body = "LLM_API_KEY=\nOPENAI_API_KEY=real-key\n"
+    assert Settings(_env_file=_dotenv(tmp_path, body)).LLM_API_KEY == "real-key"
+
+
+def test_blank_key_alone_fails(tmp_path, clean_llm_env):
+    with pytest.raises(ValidationError):
+        Settings(_env_file=_dotenv(tmp_path, "LLM_API_KEY=\n"))
