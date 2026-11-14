@@ -8,7 +8,7 @@ from src.settings import settings
 mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
 mlflow.pydantic_ai.autolog()
 
-_provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
+_provider = OpenAIProvider(api_key=settings.LLM_API_KEY)
 
 
 def build_model(model_name: str) -> OpenAIResponsesModel:
