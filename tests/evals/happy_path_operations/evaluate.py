@@ -1,8 +1,8 @@
-import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from typing import Literal
 
 import mlflow
 from mlflow.entities import Feedback, SpanType, Trace
@@ -39,13 +39,13 @@ Expected appointments that should be referenced:
 Agent's response:
 {{outputs}}
 
-Score 1 if the response ONLY mentions appointments that appear in the expected list (or correctly indicates none exist).
-Score 0 if the response mentions ANY appointment NOT in the expected list (hallucination).
+Answer yes if the response ONLY mentions appointments that appear in the expected list (or correctly indicates none exist).
+Answer no if the response mentions ANY appointment NOT in the expected list (hallucination).
 
 Special cases:
-- If expected_appointments is empty and the agent asks for confirmation, score 1.
-- If expected_appointments is empty and the agent says "no appointments found", score 1.
-- Be strict: inventing appointment titles not in expected_appointments = score 0.
+- If expected_appointments is empty and the agent asks for confirmation, answer yes.
+- If expected_appointments is empty and the agent says "no appointments found", answer yes.
+- Be strict: inventing appointment titles not in expected_appointments = answer no.
 """
 
 _RETRIEVAL_RECALL_JUDGE_INSTRUCTIONS: str = """You are evaluating whether the agent retrieved the expected appointments from the database.
@@ -56,11 +56,11 @@ Execution trace showing tool calls and their outputs: {{trace}}
 Examine the trace for tool calls (search_appointments, list_appointments, get_appointment).
 Look at the outputs of these tool calls to see which appointments were actually retrieved.
 
-Score 1 if:
+Answer yes if:
 - All appointments listed in expected_appointments were retrieved by tool calls in the trace
 - OR expected_appointments is empty (CREATE/UPDATE/DELETE operation - no retrieval needed)
 
-Score 0 if:
+Answer no if:
 - Any expected appointment is missing from the tool call outputs in the trace
 - The agent failed to call the appropriate tool to retrieve expected appointments
 """
@@ -71,12 +71,12 @@ User request: {{inputs}}
 Expected behavior (from expectations.expected_answer_contains): {{expectations}}
 Agent's response: {{outputs}}
 
-Score 1 if:
+Answer yes if:
 - The response addresses the user's request appropriately
 - The response contains all expected key elements (or reasonable semantic equivalents)
 - For CREATE/DELETE/UPDATE requests: asking for confirmation counts as correct behavior
 
-Score 0 if:
+Answer no if:
 - The response is missing expected information
 - The response contains factually incorrect information
 - The response doesn't address the user's request
@@ -87,12 +87,15 @@ mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
 mlflow.set_experiment(_MLFLOW_EXPERIMENT_NAME)
 
 # Define LLM Judges (run on the dedicated judge model, not the agent's model).
+# MLflow only averages numbers or yes/no strings into run metrics; a bool judge
+# value comes back from the harness as the string 'True' and is dropped.
+_JUDGE_VALUE_TYPE = Literal["yes", "no"]
 groundedness_judge = make_judge(
     name="answer_groundedness",
     instructions=_GROUNDEDNESS_JUDGE_INSTRUCTIONS,
     model=judge_model_uri,
     inference_params=judge_inference_params,
-    feedback_value_type=bool,
+    feedback_value_type=_JUDGE_VALUE_TYPE,
 )
 
 correctness_judge = make_judge(
@@ -100,7 +103,7 @@ correctness_judge = make_judge(
     instructions=_CORRECTNESS_JUDGE_INSTRUCTIONS,
     model=judge_model_uri,
     inference_params=judge_inference_params,
-    feedback_value_type=bool,
+    feedback_value_type=_JUDGE_VALUE_TYPE,
 )
 
 retrieval_recall_judge = make_judge(
@@ -108,7 +111,7 @@ retrieval_recall_judge = make_judge(
     instructions=_RETRIEVAL_RECALL_JUDGE_INSTRUCTIONS,
     model=judge_model_uri,
     inference_params=judge_inference_params,
-    feedback_value_type=bool,
+    feedback_value_type=_JUDGE_VALUE_TYPE,
 )
 
 
@@ -154,11 +157,6 @@ def retrieval_recall(trace: Trace, expectations: dict):
     )
 
 
-# Session factory for the isolated in-memory DB, populated by `evaluation_context`
-# and consumed by `predict_fn`.
-test_factory: async_sessionmaker | None = None
-
-
 @asynccontextmanager
 async def evaluation_context():
     """
@@ -167,7 +165,6 @@ async def evaluation_context():
     - A fixed clock (FIXED_NOW) is injected into Deps by `predict_fn` (no datetime
       patching).
     """
-    global test_factory
 
     # 1. Setup async in-memory DB
     test_engine = create_async_engine(
@@ -222,17 +219,17 @@ async def evaluation_context():
         )
         await s.commit()
 
-    test_factory = factory
     try:
         yield factory
     finally:
-        test_factory = None
         await test_engine.dispose()
 
 
 async def predict_fn(user_prompt: str) -> str:
     """Run the appointment agent and return its response."""
-    async with test_factory() as session:
+    # Each row gets its own seeded DB: MLflow runs rows on parallel worker
+    # threads, each driving predict_fn in its own event loop.
+    async with evaluation_context() as factory, factory() as session:
         deps = Deps(
             session=session, negotiator_agent=negotiator_agent, now=lambda: FIXED_NOW
         )
@@ -257,28 +254,17 @@ def run_evaluation(data_path: str = _SYNTHETIC_DATASET_PATH) -> None:
     with open(data_path, "r") as f:
         data = [json.loads(line) for line in f]
 
-    # `mlflow.genai.evaluate` is synchronous and internally drives the async
-    # `predict_fn` via its own `asyncio.run()` per row, so the isolated DB must be
-    # set up/torn down *outside* of any running event loop.
-    ctx = evaluation_context()
-    entered = False
-    try:
-        asyncio.run(ctx.__aenter__())
-        entered = True
-        print("Starting evaluation in isolated environment...")
-        results = evaluate(
-            data=data,
-            scorers=[
-                retrieval_recall,
-                retrieval_recall_judge,
-                groundedness_judge,
-                correctness_judge,
-            ],
-            predict_fn=predict_fn,
-        )
-    finally:
-        if entered:
-            asyncio.run(ctx.__aexit__(None, None, None))
+    print("Starting evaluation in isolated environment...")
+    results = evaluate(
+        data=data,
+        scorers=[
+            retrieval_recall,
+            retrieval_recall_judge,
+            groundedness_judge,
+            correctness_judge,
+        ],
+        predict_fn=predict_fn,
+    )
 
     print(f"Evaluation complete. Metrics: {results.metrics}")
     return results
