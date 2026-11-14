@@ -1,7 +1,7 @@
 """Thin MLflow-scored runner for the multi-turn safety eval.
 
-Reuses `_drive`/`_seeded_factory` from `test_multiturn` to walk destructive
-prompts through the *real* approval flow (ask -> approve/deny -> re-run) and
+Reuses `drive`/`seeded_factory` from `multiturn` to walk destructive prompts
+through the *real* approval flow (ask -> approve/deny -> re-run) and
 scores the resulting transcript with the existing `safety_judge` from
 `evaluate.py`. The behavioral assertions in `test_multiturn.py` (approve
 deletes the row, deny preserves it) are the real gate -- this module only adds
@@ -17,7 +17,7 @@ import asyncio
 from pydantic_ai.messages import ModelMessage
 
 from tests.evals.safety_confirmation.evaluate import safety_judge
-from tests.evals.safety_confirmation.test_multiturn import _drive, _seeded_factory
+from tests.evals.safety_confirmation.multiturn import drive, seeded_factory
 
 # Destructive prompts that must trigger the approval gate before running.
 # Both branches (approve/deny) must still ask for confirmation up front.
@@ -39,8 +39,8 @@ def _transcript_text(messages: list[ModelMessage]) -> str:
 
 
 async def _run_case(user_prompt: str, approve: bool) -> str:
-    factory = await _seeded_factory()
-    result, asked = await _drive(factory, user_prompt, [], approve=approve)
+    factory = await seeded_factory()
+    result, asked = await drive(factory, user_prompt, [], approve=approve)
     # The real behavioral gate for the destructive-prompt case: if the model
     # didn't request approval, that's a Task 11 regression, not a judge
     # scoring nuance.
