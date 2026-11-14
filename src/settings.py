@@ -33,6 +33,14 @@ class Settings(BaseSettings):
             return None
         return value.strip() or None
 
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def _sqlite_uses_async_driver(cls, value: str) -> str:
+        # The engine is async; pre-async .env files still say plain `sqlite://`.
+        if value.startswith("sqlite://"):
+            return "sqlite+aiosqlite://" + value.removeprefix("sqlite://")
+        return value
+
     @model_validator(mode="after")
     def _merge_legacy_names(self) -> "Settings":
         self.LLM_API_KEY = self.LLM_API_KEY or self.OPENAI_API_KEY

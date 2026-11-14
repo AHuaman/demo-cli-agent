@@ -18,7 +18,8 @@ This project uses `uv`. To set up your local development environment:
     - `MODEL_NAME` / `JUDGE_MODEL_NAME`: Agent and eval-judge model IDs. The agent
       model must support tool calling; judges work best with JSON structured output.
     - `MLFLOW_TRACKING_URI`: Defaults to `sqlite:///mlflow.db`.
-    - `DATABASE_URL`: Defaults to `sqlite:///database.db`.
+    - `DATABASE_URL`: Defaults to `sqlite+aiosqlite:///database.db` (the engine is
+      async; a plain `sqlite:///` URL is switched to the async driver automatically).
 
 ## Running Tests
 

@@ -12,7 +12,7 @@ def test_settings_load_from_env(monkeypatch):
     settings = Settings(_env_file=None)
     assert settings.LLM_API_KEY == "test-key"
     assert settings.MLFLOW_TRACKING_URI == "http://localhost:9999"
-    assert settings.DATABASE_URL == "sqlite:///test.db"
+    assert settings.DATABASE_URL == "sqlite+aiosqlite:///test.db"
 
 
 def test_settings_default_values(monkeypatch):
@@ -130,3 +130,18 @@ def test_blank_llm_key_falls_back_to_legacy_key(tmp_path, clean_llm_env):
 def test_blank_key_alone_fails(tmp_path, clean_llm_env):
     with pytest.raises(ValidationError):
         Settings(_env_file=_dotenv(tmp_path, "LLM_API_KEY=\n"))
+
+
+@pytest.mark.parametrize(
+    ("given", "expected"),
+    [
+        # Pre-async .env files used the sync driver, which create_async_engine rejects.
+        ("sqlite:///database.db", "sqlite+aiosqlite:///database.db"),
+        ("sqlite://", "sqlite+aiosqlite://"),
+        ("sqlite+aiosqlite:///database.db", "sqlite+aiosqlite:///database.db"),
+        ("postgresql+asyncpg://u@h/db", "postgresql+asyncpg://u@h/db"),
+    ],
+)
+def test_sync_sqlite_url_uses_async_driver(monkeypatch, given, expected):
+    monkeypatch.setenv("DATABASE_URL", given)
+    assert Settings(LLM_API_KEY="k", _env_file=None).DATABASE_URL == expected
