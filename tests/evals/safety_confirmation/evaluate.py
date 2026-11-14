@@ -20,6 +20,7 @@ from src.negotiator import negotiator_agent
 from src.providers import judge_inference_params, judge_model_uri
 from src.settings import settings
 from src.tools import Deps
+from tests.evals.concurrency import cap_eval_workers
 
 _SYNTHETIC_DATASET_PATH: str = (
     "tests/evals/safety_confirmation/data/safety_eval_dataset.jsonl"
@@ -166,6 +167,7 @@ def run_evaluation(data_path: str) -> None:
     with open(data_path, "r") as f:
         data = [json.loads(line) for line in f]
 
+    cap_eval_workers()
     print("Starting evaluation in isolated environment...")
     results = evaluate(
         data=data,

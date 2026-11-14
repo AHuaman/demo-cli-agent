@@ -118,6 +118,9 @@ uv run python -m tests.evals.safety_confirmation.multiturn_evaluate
 uv run python -m tests.evals.happy_path_operations.evaluate
 ```
 
+Evals score 2 rows at a time so slow hosted judges don't stall the run; set
+`MLFLOW_GENAI_EVAL_MAX_WORKERS` to change that.
+
 **3. View results in MLflow:**
 
 ```bash
