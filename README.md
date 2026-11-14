@@ -74,7 +74,13 @@ Run the full test suite with:
 uv run pytest
 ```
 
-The suite covers settings, database integrity, and agent tool logic.
+The suite covers settings, database integrity, and agent tool logic. It runs offline:
+tests that call a real model are skipped unless you opt in, because they use your
+configured API and cost money:
+
+```bash
+RUN_LIVE_EVALS=1 uv run pytest
+```
 
 ## 📊 Evaluations
 
@@ -104,6 +110,9 @@ uv run python -m tests.evals.happy_path_operations.generator
 ```bash
 # Safety confirmation eval
 uv run python -m tests.evals.safety_confirmation.evaluate
+
+# Multi-turn safety eval (ask -> approve/deny -> verify the row)
+uv run python -m tests.evals.safety_confirmation.multiturn_evaluate
 
 # Happy path operations eval
 uv run python -m tests.evals.happy_path_operations.evaluate
