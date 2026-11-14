@@ -54,7 +54,9 @@ async def drive(
     gate, before the approve/deny decision is applied.
     """
     async with factory() as session:
-        deps = Deps(session=session, negotiator_agent=negotiator_agent, now=lambda: FIXED_NOW)
+        deps = Deps(
+            session=session, negotiator_agent=negotiator_agent, now=lambda: FIXED_NOW
+        )
         result = await appointment_agent.run(prompt, message_history=history, deps=deps)
         for _ in range(MAX_CONFIRM_TURNS):
             if not isinstance(result.output, str):

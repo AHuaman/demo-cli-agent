@@ -6,7 +6,9 @@ import pandas as pd
 _VERDICTS = {"yes": 1.0, "no": 0.0}
 
 
-def judge_pass_rates(result_df: pd.DataFrame, judge_names: list[str]) -> dict[str, float]:
+def judge_pass_rates(
+    result_df: pd.DataFrame, judge_names: list[str]
+) -> dict[str, float]:
     """Mean of yes(1)/no(0) per judge, as `<judge>/mean`. Rows without a
     verdict (judge call errored) are left out rather than counted as a fail."""
     rates = {}
