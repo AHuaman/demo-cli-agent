@@ -1,10 +1,20 @@
+import typing
 from datetime import datetime
 
-import pytest
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelResponse,
+    TextPart,
+    ToolCallPart,
+    ToolReturnPart,
+)
+from pydantic_ai.models.function import AgentInfo, FunctionModel
 from sqlmodel import select
 
+from src.agent import appointment_agent
 from src.models import Appointment
 from tests.evals.happy_path_operations import evaluate
+from tests.live import requires_live_model
 
 
 async def test_evaluation_context_isolation():
@@ -27,11 +37,7 @@ async def test_evaluation_context_isolation():
             assert "Dentist Appointment" in titles
 
 
-@pytest.mark.skip(
-    reason="Requires a live OpenAI call (appointment_agent.run against the real "
-    "model); no network/API keys in this environment. Run manually with "
-    "credentials configured."
-)
+@requires_live_model
 async def test_predict_fn_returns_response():
     """Verify predict_fn returns a string response."""
     async with evaluate.evaluation_context():
@@ -41,3 +47,29 @@ async def test_predict_fn_returns_response():
         # Should mention tomorrow's appointments
         lowered = response.lower()
         assert "doctor" in lowered or "team sync" in lowered
+
+
+def _list_then_answer(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+    for part in messages[-1].parts:
+        if isinstance(part, ToolReturnPart):
+            titles = ", ".join(a.title for a in part.content)
+            return ModelResponse(parts=[TextPart(f"You have: {titles}")])
+    return ModelResponse(parts=[ToolCallPart("list_appointments", {})])
+
+
+async def test_predict_fn_without_outer_context():
+    """MLflow calls predict_fn bare, with no evaluation_context around it."""
+    with appointment_agent.override(model=FunctionModel(_list_then_answer)):
+        response = await evaluate.predict_fn("What appointments do I have?")
+    assert isinstance(response, str)
+    assert "Doctor's Appointment" in response
+
+
+def test_happy_path_judges_answer_yes_no():
+    """`judge_pass_rates` scores yes/no verdicts."""
+    for judge in (
+        evaluate.groundedness_judge,
+        evaluate.correctness_judge,
+        evaluate.retrieval_recall_judge,
+    ):
+        assert typing.get_args(judge._feedback_value_type) == ("yes", "no")
